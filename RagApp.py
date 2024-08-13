@@ -44,6 +44,7 @@ class TextProcessor:
         llm_model_name = 'jinaai/jina-reranker-v2-base-multilingual'
         local_model_gte_path = './models/intfloat-e5-small-v2'
         local_llm_model_path = './models/jina-reranker-v2-base-multilingual'
+        print("newline")
         try:
             self.tokenizer = AutoTokenizer.from_pretrained(local_model_gte_path, local_files_only=True)
             self.model_gte = AutoModel.from_pretrained(local_model_gte_path, torch_dtype=torch.float32,local_files_only=True).to(self.device)
