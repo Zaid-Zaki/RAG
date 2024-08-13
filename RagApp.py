@@ -65,9 +65,9 @@ class TextProcessor:
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
     def clean_dataframe(self):
-        self.df['headings'] = self.df['headings'].apply(lambda x: x.lower() if isinstance(x, str) else x)
-        self.df['headings'] = self.df['headings'].apply(lambda x: re.sub(r'\W', ' ', x) if isinstance(x, str) else x)
-        self.df['headings'] = self.df['headings'].apply(lambda x: re.sub(r'\s+', ' ', x).strip() if isinstance(x, str) else x)
+        self.df['Headings'] = self.df['Headings'].apply(lambda x: x.lower() if isinstance(x, str) else x)
+        self.df['Headings'] = self.df['Headings'].apply(lambda x: re.sub(r'\W', ' ', x) if isinstance(x, str) else x)
+        self.df['Headings'] = self.df['Headings'].apply(lambda x: re.sub(r'\s+', ' ', x).strip() if isinstance(x, str) else x)
         self.df.fillna('', inplace=True)
 
     def _chunk_text(self, text):
@@ -92,7 +92,7 @@ class TextProcessor:
         chunked_texts = []
         links = []
         for index, row in self.df.iterrows():
-            chunks = self._chunk_text(row['headings'])
+            chunks = self._chunk_text(row['Headings'])
             chunked_texts.extend(chunks)
             links.extend([row['Links']] * len(chunks))
         if os.path.exists(r"F:\RAG_algo\embedding.pkl"):
@@ -162,99 +162,74 @@ class TextProcessor:
 
     def find_most_relevant_document(self, query, documents, links, model_name='gemini-1.5-flash-latest',
                                     index_name='my_faiss_index', conversation_history=None):
-        calendar_data= self.calander_df
+
         if conversation_history and len(conversation_history) >= 2:
             last_two_inputs = conversation_history[-2:]
         else:
             last_two_inputs = conversation_history or []
 
         template = """
-                System: You are a helpful assistant for GLA Website. Maintain context from the recent conversation history provided.
+                        
+                        System: You are a helpful assistant for the GLA website. Maintain context from the recent conversation history provided.
 
-                Recent conversation history: {chat_history}
-                Context: {context}
-                Available Links: {links}
-                Calendar Data: {calendar_data}
-                Human: {question}
-                
-                Assistant: Let me help you with that. I'll use the context, links, and calendar data provided to give you the most relevant information.
-                
-                Instructions:
-                Use Context and Data:
-                    Use the context, recent conversation history, and calendar data to answer the question.
-                    Use context to answer the query question that is asked by the user.
-                    Provide detailed answers based on the given facts.
-                
-                Specific Queries:
-                    For person-specific queries, provide the full row of information for that person.
-                    For department-specific queries, return all rows related to that department.
-                    For designation-specific queries, return all rows with that designation.
-                
-                Relevance:
-                    If the context contains related GLA information but not directly relevant, provide that information with an explanation of its relevance.
-                
-                No Direct Match:
-                    If neither the context nor the recent conversation history contains relevant information:
-                    Check for keyword matches.
-                    Provide information related to GLA services based on keyword matches.
-                
-                Keyword Matches:
-                    For direct keyword matches:
-                        Example: "marketing" -> "GLA offers comprehensive marketing services including digital marketing, SEO, and content strategy."
-                    For partial matches:
-                        Example: "market" -> "GLA has various marketing solutions. How can I assist you further?"
-                    If there is no match, provide a general GLA information summary.
-                
-                Types of Questions:
-                    Answer "how," "what," "why," and "where" questions based on the provided context and data.
-                
-                Scheduling or Meetings:
-                    Provide the relevant Calendly link for scheduling or meeting queries.
-                    Include their Calendly link when mentioning a person from the calendar data.
-                
-                Continuity:
-                    Maintain continuity with recent conversation history for follow-up questions or previous topics.
-                    Address older context if relevant to the current question.
-                
-                Response Structure:
-                    Ensure responses are consistently structured, logically flowing, and grounded in the provided information.
-                
-                Unclear Queries:
-                    If the input is unclear, respond with "Please provide a clear question so I can assist you better."
-                
-                Follow-up Questions:
-                    Refer to the conversation history when answering follow-up questions.
-                
-                Link Formatting:
-                    Use markdown format for links: link text.
-                    For Calendly links, use the person's name as the link text.
-                    For other links, use descriptive text.
-                
-                Detailed Explanation Instructions:
-                    Length and Clarity:
-                        Provide precise and to the point answers in 2 to 3 lines maximum.
-                    Examples and Analogies:
-                        Use examples or analogies if necessary.
-                    Flow and Coherence:
-                        Ensure logical flow and coherence throughout the explanation.
-                
-                Variation in Responses:
-                    Unique Wording:
-                        Use unique wording and structure for each answer.
-                        Vary phrasing and sentence structure to keep interactions engaging and dynamic.
-                
-                Sample Response:
-                    Human: What do clients say about us?
-                    Assistant: GLA  is dedicated to providing excellent service and exceeding client expectations. To see client testimonials and feedback, visit our [portfolio](insert-portfolio-link) on our website, where you can view various projects we have completed and read client reviews.
-                
-                    Human: Can you provide the links for client testimonials?
-                    Assistant: You can view client testimonials and feedback on our [portfolio page](insert-portfolio-link) on the Bitsol website. This page includes various projects and client reviews.
-                
-                For website or product development queries, provide responses based on the context provided, and avoid including calendar data or meeting details unless specifically requested. For queries related to scheduling or calendar data, include relevant calendar information and links.
+                    Recent conversation history: {chat_history}
+                    Context: {context}
+                    Available Links: {links}
+                    Human: {question}
+                    
+                    Assistant: Let me help you with that. I'll use the context and available links to provide the most relevant information.
+                    
+                    Instructions:
+                    Use Context and Data:
+                    - Utilize the context and recent conversation history to answer the question.
+                    - Offer detailed responses based on the provided facts and data.
+                    
+                    Relevance:
+                    - If the context includes relevant GLA information, provide that information and explain its relevance.
+                    - Avoid stating that you don't have the information; instead, offer related insights based on available data.
+                    
+                    No Direct Match:
+                    - If the context and recent conversation history do not contain relevant information:
+                      - Search for keyword matches.
+                      - Provide information related to GLA services based on keyword relevance.
+                    
+                    Keyword Matches:
+                    - For exact keyword matches:
+                      - Example: "marketing" -> "GLA offers comprehensive marketing services including digital marketing, SEO, and content strategy."
+                    - For partial keyword matches:
+                      - Example: "market" -> "GLA has various marketing solutions. How can I assist you further?"
+                    - If there is no keyword match, provide a general summary of GLA's services.
+                    
+                    Types of Questions:
+                    - Answer "how," "what," "why," and "where" questions based on the provided context and data.
+                    
+                    Continuity:
+                    - Maintain continuity with recent conversation history for follow-up questions or previous topics.
+                    - Address any relevant older context if applicable to the current question.
+                    
+                    Response Structure:
+                    - Ensure responses are structured logically and are grounded in the provided information.
+                    - Provide clear, concise answers with a logical flow.
+                    
+                    Unclear Queries:
+                    - If the input is unclear, respond with: "Please provide a clear question so I can assist you better."
+                    
+                    Follow-up Questions:
+                    - Refer to the conversation history when answering follow-up questions to maintain relevance and coherence.
+                    
+                    Detailed Explanation Instructions:
+                    - Length and Clarity: Provide precise and clear answers in 2 to 3 lines maximum.
+                    - Examples and Analogies: Use examples or analogies if necessary to clarify points.
+                    - Flow and Coherence: Ensure responses have a logical flow and are coherent.
+                    - Include links when relevant: Provide clickable links in markdown format [name](link address) if it enhances the response.
+                    
+                    Variation in Responses:
+                    - Unique Wording: Use varied phrasing and sentence structure to keep interactions engaging and dynamic.
+                    
+                    For website or product development queries, tailor responses based on the provided context and include relevant links where applicable.
+
 
         """
-
-
 
         model_name = "sentence-transformers/all-mpnet-base-v2"
         model_kwargs = {'device': 'cpu'}
@@ -263,7 +238,7 @@ class TextProcessor:
 
         prompt = PromptTemplate(
             template=template,
-            input_variables=["chat_history", "context", "question", "links", "calendar_data"]
+            input_variables=["chat_history", "context", "question", "links"]
         )
 
         doc_objects = [Document(page_content=f"{doc}\nRelevant Link: {link}", metadata={"link": link})
@@ -300,7 +275,6 @@ class TextProcessor:
         links_string = "\n".join(links)
         context = " ".join(documents)
 
-        calendar_data = self.calander_df.to_string(index=False) if self.calander_df is not None else "No calendar data available"
 
 
         try:
@@ -309,8 +283,7 @@ class TextProcessor:
                 "question": query,
                 "chat_history": last_two_inputs,
                 "context": context,
-                "links": links_string,
-                "calendar_data": calendar_data
+                "links": links_string
             }
 
             # Prepare inputs for the memory
@@ -331,10 +304,8 @@ class TextProcessor:
         return response.get("answer")
 
 
-
-
 def load_data():
-    file_key = r"F:\RAG_algo\Gla.xlsx"
+    file_key = r"F:\RAG_algo\Gla2.xlsx"
     df = pd.read_excel(file_key)
     return df
 
@@ -342,15 +313,12 @@ df = load_data()
 text_processor = TextProcessor(df)
 @me.page(path="/", title="Website Retrieval Bot")
 def app():
-    #history: list[mel.ChatMessage]
     def process_query(query: str,history: list[mel.ChatMessage]):
         start_time = time.time()
         response = text_processor.retrieve_texts(query)
         end_time = time.time()
         print(f" execution time: {end_time - start_time:.4f} seconds")
         return response
-
-
     # return mel.text_to_text(
     #     process_query,
     #     title="Website Retrieval Bot")
